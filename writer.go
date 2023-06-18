@@ -32,16 +32,22 @@ type icondirentry struct {
 
 func Encode(iw io.Writer, im image.Image, size int) error {
 	if size != 16 && size != 32 && size != 48 && size != 64 && size != 256 {
-		err := errors.New("Unsupported icon size request")
+		err := errors.New("unsupported icon size request")
 		return err
 	}
 
-	img, err := scaleImage(im, size)
+	im, ok := im.(*image.RGBA)
+	if !ok {
+		err := errors.New("image is not an RGBA type")
+		return err
+	}
+
+	img := scaleImage(im, size)
 
 	pngbuffer := new(bytes.Buffer)
 	pngwriter := bufio.NewWriter(pngbuffer)
 
-	err = png.Encode(pngwriter, img)
+	err := png.Encode(pngwriter, img)
 	if err != nil {
 		return err
 	}
@@ -95,7 +101,7 @@ func Encode(iw io.Writer, im image.Image, size int) error {
 	return err
 }
 
-func scaleImage(img image.Image, size int) (image.Image, error) {
+func scaleImage(img image.Image, size int) image.Image {
 	out := image.NewRGBA(image.Rect(0, 0, size, size))
 
 	var wg sync.WaitGroup
@@ -113,7 +119,7 @@ func scaleImage(img image.Image, size int) (image.Image, error) {
 	}
 
 	wg.Wait()
-	return out, nil
+	return out
 }
 
 func splitImage(r image.Rectangle, n int) []image.Rectangle {
